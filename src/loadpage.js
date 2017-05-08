@@ -10,7 +10,7 @@ const buildFilenameFromUrl = (request) => {
     .replace(/\W+/g, '-')}.html`;
 };
 
-const loadpage = (request, output) => {
+const loadpage = (request, output = './') => {
   const filename = path.resolve(output, buildFilenameFromUrl(request));
 
   return axios.get(request)
