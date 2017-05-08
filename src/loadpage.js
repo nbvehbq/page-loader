@@ -13,13 +13,8 @@ const buildFilenameFromUrl = (request) => {
 const loadpage = (request, output) => {
   const filename = path.resolve(output, buildFilenameFromUrl(request));
 
-  axios.get(request)
-    .then((response) => {
-      fs.writeFile(filename, response.data);
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  return axios.get(request)
+    .then(response => fs.writeFile(filename, response.data));
 };
 
 export default loadpage;
