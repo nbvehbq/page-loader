@@ -1,0 +1,39 @@
+{
+  "name": "page-loader",
+  "version": "0.0.1",
+  "description": "A small tool that downloads the page from the given url and puts it in the specified folder (by default it's in the program's start directory).",
+  "main": "dist/bin/page-loader.js",
+  "scripts": {
+    "test": "jest",
+    "babel-node": "babel-node",
+    "build": "NODE_ENV=production babel src --out-dir dist --source-maps inline",
+    "prepublish": "npm run build",
+    "eslint": "eslint"
+  },
+  "bin": {
+    "page-loader": "dist/bin/page-loader.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nbvehbq/project-lvl3-s91.git"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.0",
+    "babel-core": "^6.24.0",
+    "babel-eslint": "^7.1.1",
+    "babel-preset-env": "^1.2.1",
+    "babel-preset-stage-0": "^6.22.0",
+    "eslint": "^3.17.1",
+    "eslint-config-airbnb-base": "^11.1.1",
+    "eslint-plugin-import": "^2.2.0",
+    "jest": "^19",
+    "eslint-plugin-jest": "^19.0.1"
+  },
+  "dependencies": {
+    "axios": "^0.16.1",
+    "commander": "^2.9.0",
+    "mz": "^2.6.0"
+  },
+  "author": "Timur Karpenok",
+  "license": "ISC"
+}
