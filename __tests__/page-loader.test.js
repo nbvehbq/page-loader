@@ -27,22 +27,21 @@ describe('Test page download suit', () => {
     tempPath = fs.mkdtempSync(path.join(os.tmpdir(), 'page-loader-'));
   });
 
-  it('loaded...', (done) => {
-    loadpage(testUrl, tempPath)
+  it('loaded...', () => {
+    expect.assertions(1);
+    return loadpage(testUrl, tempPath)
       .then(() => {
         const fileContent = fs.readFileSync(
           path.resolve(tempPath, 'localhost-test.html'), 'utf-8');
         expect(fileContent).toBe('test data');
-      })
-      .catch(done.fail)
-      .then(done);
+      });
   });
 
-  it('page not exist...', (done) => {
-    loadpage(notExistUrl, tempPath)
-    .catch((err) => {
-      expect(err.statusCode).toBe(404);
-      done();
-    });
+  it('page not exist...', async () => {
+    expect.assertions(1);
+    return loadpage(notExistUrl, tempPath)
+      .catch((err) => {
+        expect(err.statusCode).toBe(404);
+      });
   });
 });
