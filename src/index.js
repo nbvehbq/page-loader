@@ -1,7 +1,8 @@
-import axios from 'axios';
 import path from 'path';
 import url from 'url';
 import fs from 'mz/fs';
+
+import axios from './lib/axios';
 
 const buildFilenameFromUrl = (request) => {
   const urlObject = url.parse(request, true);

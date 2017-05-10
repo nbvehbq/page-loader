@@ -1,18 +1,13 @@
-import axios from 'axios';
 import path from 'path';
 import os from 'os';
 import fs from 'mz/fs';
-import httpAdapter from 'axios/lib/adapters/http';
 import nock from 'nock';
 
 import loadpage from '../src';
 
-const host = 'https://localhost';
+const host = 'http://localhost';
 const testUrl = `${host}/test`;
 const notExistUrl = `${host}/not_exist`;
-
-axios.defaults.host = host;
-axios.defaults.adapter = httpAdapter;
 
 describe('Test page download suit', () => {
   let tempPath = '';
