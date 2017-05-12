@@ -36,6 +36,11 @@
     "commander": "^2.9.0",
     "mz": "^2.6.0"
   },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "__fixtures__"
+    ]
+  },
   "author": "Timur Karpenok",
   "license": "ISC"
 }
