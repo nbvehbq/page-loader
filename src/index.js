@@ -63,16 +63,29 @@ const loadAndSave = (uri, basePath, host) =>
     .then((response) => {
       reslog('resurce [%s] loadeded', uri);
       const savedName = buildFileName(uri);
-      fs.writeFile(path.resolve(basePath, savedName), response.data)
+      return fs.writeFile(path.resolve(basePath, savedName), response.data)
       .then(() => reslog('...and saved as [%s]', savedName));
-    });
+    })
+    .catch(err => err);
 
 export default (uri, output = '.') => {
   const basename = buildFileName(uri);
   const filename = `${path.resolve(output, basename)}.html`;
   const foldername = `${path.resolve(output, basename)}_files`;
 
-  return axios.get(uri)
+  return fs.exists(output)
+    .then((exists) => {
+      if (!exists) throw new Error(`Output directory: ${output} not exist`);
+      return exists;
+    })
+    .then(() => fs.exists(filename))
+    .then((exists) => {
+      if (exists) {
+        throw new Error(`Url: ${uri} already downloaded in same directory`);
+      }
+      return exists;
+    })
+    .then(() => axios.get(uri)
     .then((response) => {
       debug('page [%s] loadeded...', uri);
       const localUrls = getLocalUrls(response.data);
@@ -81,15 +94,16 @@ export default (uri, output = '.') => {
       return { localUrls, content };
     })
     .then((data) => {
-      if (data.localUrls.length > 0) {
-        fs.mkdir(foldername);
-      }
       const writeFilePromise = fs.writeFile(filename, data.content)
         .then(() => debug('page [%s] saved as [%s]', uri, filename));
 
-      return Promise.all([
-        data.localUrls.map(item => loadAndSave(item, foldername, uri)),
-        writeFilePromise,
-      ]);
-    });
+      if (data.localUrls.length > 0) {
+        return fs.mkdir(foldername).then(() => Promise.all([
+          data.localUrls.map(item => loadAndSave(item, foldername, uri)),
+          writeFilePromise,
+        ]));
+      }
+      return writeFilePromise;
+    })
+    .then(() => 'Download complited'));
 };

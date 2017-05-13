@@ -32,7 +32,7 @@ describe('Test page download suit', () => {
       .get('/a/b/c.js')
       .reply(200, 'test js')
       .get('/f/j/i.png')
-      .reply(200, 'test i.png');
+      .reply(404, 'test i.png');
   });
 
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('Test page download suit', () => {
   });
 
   it('loaded with resurces...', () => {
-    expect.assertions(3);
+    expect.assertions(2);
     return loadpage(`${host}/testhtml`, tempPath)
       .then(() => {
         expect(fs.existsSync(
@@ -67,10 +67,22 @@ describe('Test page download suit', () => {
       .then(() => {
         expect(fs.existsSync(
           path.resolve(tempPath, 'localhost-testhtml_files/a-b-c.js'))).toBeTruthy();
-      })
-      .then(() => {
-        expect(fs.existsSync(
-          path.resolve(tempPath, 'localhost-testhtml_files/f-j-i.png'))).toBeTruthy();
+      });
+  });
+
+  it('output directory not exist...', async () => {
+    expect.assertions(1);
+    return loadpage(testUrl, 'not_exists_dir')
+      .catch((err) => {
+        expect(err.message).toMatch('not exist');
+      });
+  });
+
+  it('resource not exist...', async () => {
+    expect.assertions(1);
+    return loadpage(`${host}/testhtml`, tempPath)
+      .catch((err) => {
+        expect(err.statusCode).toBe(404);
       });
   });
 });

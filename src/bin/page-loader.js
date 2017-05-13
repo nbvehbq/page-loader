@@ -10,8 +10,11 @@ program
   .arguments('<url>')
   .action((url, options) => {
     loadpage(url, options.output)
-      .then(() => console.log('Download complited'))
-      .catch(err => console.log(err.message));
+      .then(message => console.log(message))
+      .catch((err) => {
+        process.exitCode = 1;
+        return console.error(err.message);
+      });
   });
 
 program.parse(process.argv);
