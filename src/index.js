@@ -2,8 +2,12 @@ import path from 'path';
 import url from 'url';
 import fs from 'mz/fs';
 import cheerio from 'cheerio';
+import debuger from 'debug';
 
 import axios from './lib/axios';
+
+const debug = debuger('page-loader:main');
+const reslog = debuger('page-loader:resurces');
 
 const requestObects = [
   { name: 'link', href: 'href' },
@@ -50,13 +54,18 @@ const changeUrls = (data, base) => {
     });
   });
 
+  debug('replace url with local links complited...');
   return $.html();
 };
 
 const loadAndSave = (uri, basePath, host) =>
   axios.get(url.resolve(host, uri), { responseType: 'arraybuffer' })
-    .then(response =>
-      fs.writeFile(path.resolve(basePath, buildFileName(uri)), response.data));
+    .then((response) => {
+      reslog('resurce [%s] loadeded', uri);
+      const savedName = buildFileName(uri);
+      fs.writeFile(path.resolve(basePath, savedName), response.data)
+      .then(() => reslog('...and saved as [%s]', savedName));
+    });
 
 export default (uri, output = '.') => {
   const basename = buildFileName(uri);
@@ -64,15 +73,23 @@ export default (uri, output = '.') => {
   const foldername = `${path.resolve(output, basename)}_files`;
 
   return axios.get(uri)
-  .then((response) => {
-    const localUrls = getLocalUrls(response.data);
-    if (localUrls.length > 0) {
-      fs.mkdir(foldername);
-    }
-    const newContent = changeUrls(response.data, `${basename}_files`);
-    return Promise.all([
-      localUrls.map(item => loadAndSave(item, foldername, uri)),
-      fs.writeFile(filename, newContent),
-    ]);
-  });
+    .then((response) => {
+      debug('page [%s] loadeded...', uri);
+      const localUrls = getLocalUrls(response.data);
+      debug('urls count: %d', localUrls.length);
+      const content = changeUrls(response.data, `${basename}_files`);
+      return { localUrls, content };
+    })
+    .then((data) => {
+      if (data.localUrls.length > 0) {
+        fs.mkdir(foldername);
+      }
+      const writeFilePromise = fs.writeFile(filename, data.content)
+        .then(() => debug('page [%s] saved as [%s]', uri, filename));
+
+      return Promise.all([
+        data.localUrls.map(item => loadAndSave(item, foldername, uri)),
+        writeFilePromise,
+      ]);
+    });
 };

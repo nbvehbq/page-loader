@@ -5,7 +5,7 @@
   "main": "dist/bin/page-loader.js",
   "scripts": {
     "test": "jest",
-    "babel-node": "babel-node",
+    "babel-node": "DEBUG=page-loader:* babel-node",
     "build": "NODE_ENV=production babel src --out-dir dist --source-maps inline",
     "prepublish": "npm run build",
     "eslint": "eslint"
@@ -34,6 +34,7 @@
     "axios": "^0.16.1",
     "cheerio": "^0.22.0",
     "commander": "^2.9.0",
+    "debug": "^2.6.6",
     "mz": "^2.6.0"
   },
   "jest": {
