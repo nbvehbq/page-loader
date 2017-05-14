@@ -3,6 +3,7 @@ import url from 'url';
 import fs from 'mz/fs';
 import cheerio from 'cheerio';
 import debuger from 'debug';
+import Listr from 'listr';
 
 import axios from './lib/axios';
 
@@ -75,37 +76,90 @@ export default (uri, output = '.') => {
   const filename = `${path.resolve(output, basename)}.html`;
   const foldername = `${path.resolve(output, basename)}_files`;
 
-  return fs.exists(output)
-    .then((exists) => {
-      if (!exists) {
-        return Promise.reject(new Error(`Output directory: ${output} not exist`));
-      }
-      return exists;
-    })
-    .then(() => fs.exists(filename))
-    .then((exists) => {
-      if (exists) {
-        return Promise.reject(new Error(`Url: ${uri} already downloaded in same directory`));
-      }
-      return exists;
-    })
-    .then(() => axios.get(uri)
-    .then((response) => {
-      debug('page [%s] loadeded...', uri);
-      const localUrls = getLocalUrls(response.data);
-      debug('urls count: %d', localUrls.length);
-      const content = changeUrls(response.data, `${basename}_files`);
-      return { localUrls, content };
-    })
-    .then((data) => {
-      const writeFilePromise = fs.writeFile(filename, data.content)
-      .then(() => debug('page [%s] saved as [%s]', uri, filename));
+  const task = new Listr([
+    {
+      title: 'Cheking dirrs...',
+      task: () => new Listr([
+        {
+          title: 'Checking output directory...',
+          task: () => fs.exists(output)
+            .then((exists) => {
+              if (!exists) {
+                return Promise.reject(new Error(`Output directory: ${output} not exist`));
+              }
+              return Promise.resolve(exists);
+            }),
+        },
+        {
+          title: 'Checking already downloaded...',
+          task: () => fs.exists(filename)
+            .then((exists) => {
+              if (exists) {
+                return Promise.reject(new Error(`Url: ${uri} already downloaded in same directory`));
+              }
+              return Promise.resolve(exists);
+            }),
+        },
+      ], { concurrent: true }),
+    },
+    {
+      title: `Downloading page [${uri}]`,
+      task: ctx => axios.get(uri)
+        .then((response) => {
+          debug('page [%s] loadeded...', uri);
+          ctx.localUrls = getLocalUrls(response.data);
+          debug('urls count: %d', ctx.localUrls.length);
+          ctx.content = changeUrls(response.data, `${basename}_files`);
+        }),
+    },
+    {
+      title: 'Downloading resources',
+      task: (ctx) => {
+        const writeFilePromise = fs.writeFile(filename, ctx.content)
+        .then(() => debug('page [%s] saved as [%s]', uri, filename));
 
-      return fs.mkdir(foldername).then(() =>
-        Promise.all([
-          data.localUrls.map(item => loadAndSave(item, foldername, uri)),
-          writeFilePromise,
-        ]));
-    })
-    .then(() => 'Download complited'));
+        return fs.mkdir(foldername).then(() =>
+          Promise.all([
+            ctx.localUrls.map(item => loadAndSave(item, foldername, uri)),
+            writeFilePromise,
+          ]));
+      },
+    },
+  ]);
+
+  return task.run().catch(err => Promise.reject(err));
+
+  // return fs.exists(output)
+  //   .then((exists) => {
+  //     if (!exists) {
+  //       return Promise.reject(new Error(`Output directory: ${output} not exist`));
+  //     }
+  //     return exists;
+  //   })
+  //   .then(() => fs.exists(filename))
+  //   .then((exists) => {
+  //     if (exists) {
+  //       return Promise.reject(new Error(`Url: ${uri} already downloaded in same directory`));
+  //     }
+  //     return exists;
+  //   })
+  //   .then(() => axios.get(uri)
+  //   .then((response) => {
+  //     debug('page [%s] loadeded...', uri);
+  //     const localUrls = getLocalUrls(response.data);
+  //     debug('urls count: %d', localUrls.length);
+  //     const content = changeUrls(response.data, `${basename}_files`);
+  //     return { localUrls, content };
+  //   })
+  //   .then((data) => {
+  //     const writeFilePromise = fs.writeFile(filename, data.content)
+  //     .then(() => debug('page [%s] saved as [%s]', uri, filename));
+  //
+  //     return fs.mkdir(foldername).then(() =>
+  //       Promise.all([
+  //         data.localUrls.map(item => loadAndSave(item, foldername, uri)),
+  //         writeFilePromise,
+  //       ]));
+  //   })
+  //   .then(() => 'Download complited'));
 };

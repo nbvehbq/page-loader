@@ -10,7 +10,6 @@ program
   .arguments('<url>')
   .action((url, options) => {
     loadpage(url, options.output)
-      .then(message => console.log(message))
       .catch((err) => {
         process.exitCode = 1;
         return console.error(err.message);
