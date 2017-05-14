@@ -61,11 +61,13 @@ const changeUrls = (data, base) => {
 const loadAndSave = (uri, basePath, host) =>
   axios.get(url.resolve(host, uri), { responseType: 'arraybuffer' })
     .then((response) => {
-      reslog('resurce [%s] loadeded', uri);
+      const content = response.data;
       const savedName = buildFileName(uri);
-      return fs.writeFile(path.resolve(basePath, savedName), response.data)
-      .then(() => reslog('...and saved as [%s]', savedName));
+      reslog('resurce [%s] loadeded', uri);
+      return { content, savedName };
     })
+    .then(data => fs.writeFile(path.resolve(basePath, data.savedName), data.content)
+      .then(() => reslog('...and saved as [%s]', data.savedName)))
     .catch(err => err);
 
 export default (uri, output = '.') => {
@@ -75,13 +77,15 @@ export default (uri, output = '.') => {
 
   return fs.exists(output)
     .then((exists) => {
-      if (!exists) throw new Error(`Output directory: ${output} not exist`);
+      if (!exists) {
+        return Promise.reject(new Error(`Output directory: ${output} not exist`));
+      }
       return exists;
     })
     .then(() => fs.exists(filename))
     .then((exists) => {
       if (exists) {
-        throw new Error(`Url: ${uri} already downloaded in same directory`);
+        return Promise.reject(new Error(`Url: ${uri} already downloaded in same directory`));
       }
       return exists;
     })
@@ -95,15 +99,13 @@ export default (uri, output = '.') => {
     })
     .then((data) => {
       const writeFilePromise = fs.writeFile(filename, data.content)
-        .then(() => debug('page [%s] saved as [%s]', uri, filename));
+      .then(() => debug('page [%s] saved as [%s]', uri, filename));
 
-      if (data.localUrls.length > 0) {
-        return fs.mkdir(foldername).then(() => Promise.all([
+      return fs.mkdir(foldername).then(() =>
+        Promise.all([
           data.localUrls.map(item => loadAndSave(item, foldername, uri)),
           writeFilePromise,
         ]));
-      }
-      return writeFilePromise;
     })
     .then(() => 'Download complited'));
 };
